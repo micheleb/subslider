@@ -40,6 +40,7 @@ class SubSlider:
 
     Subtitles can be moved forward or back in time depending on the parameters passed."""
 
+    LINES_TO_SHOW = 10
     SUB_TIME_FORMAT = "(\d{2}:\d{2}:\d{2},\d{3}) \-\-> (\d{2}:\d{2}:\d{2},\d{3})"
     DEFAULT_START_AT = "same as input; original .srt file will be copied to ORIGINAL_SRT_NAME_orig.srt"
     DATE_ZERO = datetime.strptime('2000/1/1', '%Y/%m/%d')
@@ -81,7 +82,8 @@ class SubSlider:
         parsed = self.check_args(args)
 
         if not parsed:
-            parser.error()
+            print('')
+            parser.error('Bad arguments.')
 
         (self.input_subs, self.output_subs, self.output_temp, minutes, seconds, millis) = parsed
 
@@ -143,8 +145,9 @@ class SubSlider:
             error = True
         else:
             offset = re.search('((\d{1,2})\:)?(\d+)(\,(\d{1,3}))?', input_offset.strip())
+            nsafe = lambda x : offset.group(x) if offset.group(x) else "0"
             # the ljust call is because we want e.g. '2.5' to be interpreted as 2 seconds, 500 millis
-            minutes, seconds, millis = (offset.group(2), offset.group(3), offset.group(5).ljust(3, '0'))
+            minutes, seconds, millis = (nsafe(2), nsafe(3), nsafe(5).ljust(3, '0'))
 
         if error:
             return None
@@ -157,7 +160,7 @@ class SubSlider:
         Shows a prompt to the user for her to choose the reference line that should start at the specified time, and
         returns the time at which the chosen line was originally shown.
         """
-        lines, times = self.get_first_10_lines()
+        lines, times = self.get_first_lines(self.LINES_TO_SHOW)
         # python3 has no "raw_input()"
         try:
             input = raw_input
@@ -193,7 +196,7 @@ class SubSlider:
         # group(1) is start, group(2) is end
         return self.parse_time(parsed.group(1))
 
-    def get_first_10_lines(self):
+    def get_first_lines(self, line_count):
         """
         Parses the input subs file and returns the first 10 entries, together with the time at which they're shown.
         """
@@ -213,7 +216,7 @@ class SubSlider:
                     buf = []
                 else:
                     buf.append(line.strip())
-                if found > 10:
+                if found > line_count:
                     return lines, times
         return lines, times
 
@@ -262,7 +265,7 @@ class SubSlider:
                             if not start_output:
                                 start_output = True
                             # and renumber blocks so that they start at 1, no matter what
-                            output.write('%d\r\n' % (block_num - self.first_valid + 1))
+                            output.write('%d\r\n' % (block_num - self.first_valid))
                     elif start_output:
                         output.write(line)
 
