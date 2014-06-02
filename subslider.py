@@ -127,6 +127,7 @@ class SubSlider:
         error = None
         input_file = args.input_file
         input_offset = args.start_at or args.delay_subs or args.delay_video
+        input_offset = input_offset.strip()
 
         if not os.path.isfile(input_file):
             print('%s does not exist' % input_file)
@@ -138,16 +139,21 @@ class SubSlider:
                 output_subs = args.output
             output_temp = '%s_temp.srt' % os.path.splitext(input_file)[0]
 
-        offset_ok = re.match('(\d{1,2}\:)?\d+(\,\d{1,3})?$', input_offset.strip())
+        offset_ok = re.match('(\d{1,2}\:)?\d+(\,\d{1,3})?$', input_offset)
 
         if not offset_ok:
             print('%s is not a valid offset, format is [MM:]SS[,sss], see help dialog for some examples' % input_offset)
             error = True
         else:
-            offset = re.search('((\d{1,2})\:)?(\d+)(\,(\d{1,3}))?', input_offset.strip())
+            offset = re.search('((\d{1,2})\:)?(\d+)(\,(\d{1,3}))?', input_offset)
             nsafe = lambda x : offset.group(x) if offset.group(x) else "0"
             # the ljust call is because we want e.g. '2.5' to be interpreted as 2 seconds, 500 millis
             minutes, seconds, millis = (nsafe(2), nsafe(3), nsafe(5).ljust(3, '0'))
+            if re.match('\d+(\,(\d{1,3}))?', input_offset):
+                # format is seconds(,millis), convert to minutes
+                secs = int(seconds)
+                minutes = str(secs / 60)
+                seconds = str(secs % 60)
 
         if error:
             return None
