@@ -18,6 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 from __future__ import print_function
+from bzrlib.graph import _BreadthFirstSearcher
 from datetime import datetime
 import argparse
 import collections
@@ -97,11 +98,21 @@ class SubSlider:
         # if start was specified, we need to know what's the first line that the offset needs to be applied to
         if args.start_at:
             first_starts_at = self.get_offset_from_start_at(args.start_at)
-            offset = self.get_date(minutes, seconds, millis) - first_starts_at
+            starting_at = self.get_date(minutes, seconds, millis)
+            if first_starts_at > starting_at:
+                # subtitles begin later than they should, negative offset
+                offset = first_starts_at - starting_at
+                subtract_offset = True
+            else:
+                # subtitles begin sooner than they should, positive offset
+                offset = starting_at - first_starts_at
         else:
             offset = self.get_date(minutes, seconds, millis) - self.DATE_ZERO
 
-        offset_func = lambda start, end: (start + offset, end + offset)
+        if subtract_offset:
+            offset_func = lambda start, end: (start - offset, end - offset)
+        else:
+            offset_func = lambda start, end: (start + offset, end + offset)
 
         if args.delay_video:
             # the offset must be subtracted from what's in the .srt
@@ -139,17 +150,17 @@ class SubSlider:
                 output_subs = args.output
             output_temp = '%s_temp.srt' % os.path.splitext(input_file)[0]
 
-        offset_ok = re.match('(\d{1,2}\:)?\d+(\,\d{1,3})?$', input_offset)
+        offset_ok = re.match('(\d{1,2}:)?\d+(,\d{1,3})?$', input_offset)
 
         if not offset_ok:
             print('%s is not a valid offset, format is [MM:]SS[,sss], see help dialog for some examples' % input_offset)
             error = True
         else:
-            offset = re.search('((\d{1,2})\:)?(\d+)(\,(\d{1,3}))?', input_offset)
-            nsafe = lambda x : offset.group(x) if offset.group(x) else "0"
+            offset = re.search('((\d{1,2}):)?(\d+)(,(\d{1,3}))?', input_offset)
+            nsafe = lambda x: offset.group(x) if offset.group(x) else "0"
             # the ljust call is because we want e.g. '2.5' to be interpreted as 2 seconds, 500 millis
             minutes, seconds, millis = (nsafe(2), nsafe(3), nsafe(5).ljust(3, '0'))
-            if re.match('\d+(\,(\d{1,3}))?', input_offset):
+            if re.match('^\d+(,(\d{1,3}))?$', input_offset):
                 # format is seconds(,millis), convert to minutes
                 secs = int(seconds)
                 minutes = str(secs / 60)
@@ -245,7 +256,7 @@ class SubSlider:
                         (start, end) = offset_func(start, end)
                         offset_start, offset_end = (self.format_time(start), self.format_time(end))
                         if not self.first_valid:
-                            if end > self.DATE_ZERO:
+                            if end >= self.DATE_ZERO:
                                 # this line will start at 0, and is going to be displayed until end
                                 self.first_valid = block
                                 if start < self.DATE_ZERO:
