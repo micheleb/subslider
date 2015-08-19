@@ -94,6 +94,7 @@ class SubSlider:
         self.first_valid = 0
 
         # if start was specified, we need to know what's the first line that the offset needs to be applied to
+        subtract_offset = False
         if args.start_at:
             first_starts_at = self.get_offset_from_start_at(args.start_at)
             starting_at = self.get_date(minutes, seconds, millis)
