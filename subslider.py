@@ -178,9 +178,9 @@ class SubSlider:
         lines, times = self.get_first_lines(self.LINES_TO_SHOW)
         # python3 has no "raw_input()"
         try:
-            input = raw_input
+            _input = raw_input
         except NameError:
-            pass
+            _input = input
         choices = []
         for idx, val in enumerate(lines):
             choices.append('%d: {%s}\n' % (idx + 1, val[:-1]))
@@ -188,7 +188,7 @@ class SubSlider:
         prompt = "These are the first %d lines:\n\n" % len(choices) + '\n'.join(choices) + \
                  "\n\nWhich one should start at %s?\nYour choice 1-%d [1]: " % (start_at, len(choices))
 
-        choice = input(prompt)
+        choice = _input(prompt)
         if not choice:
             # default choice is 1, which is at index #0 in the array
             choice = 0
