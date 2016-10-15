@@ -121,24 +121,25 @@ class SubSlider:
             else:
                 # subtitles begin sooner than they should, positive offset
                 offset = starting_at - first_starts_at
+            print('Applying {} as offset'.format(offset))
         else:
             offset = self.get_date(minutes, seconds, millis) - self.DATE_ZERO
 
         if subtract_offset or args.delay_video:
-            def offset_func(start, end): (start - offset, end - offset)
+            def offset_func(start, end): return (start - offset, end - offset)
         else:
-            def offset_func(start, end): (start + offset, end + offset)
+            def offset_func(start, end): return (start + offset, end + offset)
 
         self.parse_subs(offset_func)
         self.fix_file()
 
         # clean up the temp file
         os.remove(self.output_temp)
-        print('Success! Offset subs have been written to %s' %
-              os.path.abspath(self.output_subs))
+        print('Success! Offset subs have been written to {}'
+              .format(os.path.abspath(self.output_subs)))
 
         if self.input_subs == self.output_subs:
-            print('The original subs have been copied to %s' % original)
+            print('The original subs have been copied to {}'.format(original))
 
     def check_args(self, args):
         """
@@ -154,25 +155,25 @@ class SubSlider:
         input_offset = input_offset.strip()
 
         if not os.path.isfile(input_file):
-            print('%s does not exist' % input_file)
+            print('{} does not exist'.format(input_file))
             error = True
         else:
             if not args.output or args.output == self.DEFAULT_START_AT:
                 output_subs = input_file
             else:
                 output_subs = args.output
-            output_temp = '%s_temp.srt' % os.path.splitext(input_file)[0]
+            output_temp = '{}_temp.srt'.format(os.path.splitext(input_file)[0])
 
         offset_ok = re.match('(\d{1,2}:)?\d+(,\d{1,3})?$', input_offset)
 
         if not offset_ok:
-            print('%s is not a valid offset, format is [MM:]SS[,sss], see help'
-                  'dialog for some examples' % input_offset)
+            print('{} is not a valid offset, format is [MM:]SS[,sss], see help'
+                  'dialog for some examples'.format(input_offset))
             error = True
         else:
             offset = re.search('((\d{1,2}):)?(\d+)(,(\d{1,3}))?', input_offset)
 
-            def nsafe(x): offset.group(x) if offset.group(x) else "0"
+            def nsafe(x): return offset.group(x) if offset.group(x) else "0"
 
             # the ljust call is because we want e.g. '2.5' to be interpreted as
             # 2 seconds, 500 millis
@@ -209,9 +210,9 @@ class SubSlider:
         for idx, val in enumerate(lines):
             choices.append('%d: {%s}\n' % (idx + 1, val[:-1]))
 
-        prompt = "These are the first %d lines:\n\n" % len(choices) + '\n'\
-            .join(choices) + "\n\nWhich one should start at %s?" + \
-            "\nYour choice 1-%d [1]: " % (start_at, len(choices))
+        prompt = "These are the first {0} lines:\n\n{1}\n\nWhich one should "\
+            "start at {2}?\nYour choice 1-{0} [1]: "\
+            .format(len(choices), '\n'.join(choices), start_at)
 
         choice = _input(prompt)
         if not choice:
@@ -221,15 +222,15 @@ class SubSlider:
             try:
                 choice = int(choice)
                 if choice < 1 or choice > len(choices):
-                    print('Expected a number between 1 and %d, but %d was '
-                          'entered. Exiting' % (len(choices), choice))
+                    print('Expected a number between 1 and {}, but {} was '
+                          'entered. Exiting'.format(len(choices), choice))
                     sys.exit(1)
                 else:
                     # list is 0-based, choices are 1-based
                     choice -= 1
             except ValueError:
-                print('Expected a number between 1 and %d, but "%s" was '
-                      'entered. Exiting' % (len(choices), choice))
+                print('Expected a number between 1 and {}, but "{}" was '
+                      'entered. Exiting'.format(len(choices), choice))
                 sys.exit(1)
 
         # parse the string to get the start value
@@ -291,8 +292,8 @@ class SubSlider:
                                 self.first_valid = block
                                 if start < self.DATE_ZERO:
                                     offset_start = '00:00:00,000'
-                        output.write('%s --> %s\n' % (offset_start,
-                                                      offset_end))
+                        output.write('{} --> {}\n'.format(offset_start,
+                                                          offset_end))
                     else:
                         output.write(line)
 
@@ -316,10 +317,12 @@ class SubSlider:
                                 start_output = True
                             # and renumber blocks so that they start at 1, no
                             # matter what
-                            output.write('%d\r\n' %
-                                         (block_num - self.first_valid))
-                        elif start_output:
-                            output.write(line)
+                            output.write(
+                                '{}\r\n'
+                                .format(block_num - self.first_valid + 1)
+                            )
+                    elif start_output:
+                        output.write(line)
 
     @staticmethod
     def format_time(value):
@@ -335,7 +338,7 @@ class SubSlider:
         Returns a date that can be used for comparisons with timestamps in the
         .srt file.
         """
-        def nsafe(s): int(s) if s else 0
+        def nsafe(s): return int(s) if s else 0
         return datetime(2000, 1, 1, 0, nsafe(minutes), nsafe(seconds),
                         nsafe(millis) * 1000)
 
