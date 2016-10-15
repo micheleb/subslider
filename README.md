@@ -3,6 +3,15 @@ subslider
 
 A script to fix out of sync subtitles.
 
+Note
+----
+
+This is the original Python project for subslider. If you're looking for the
+quickest way to sync your subtitles without having to download anything, look
+for the more recent Javascript version, called [subslider.js][1]
+
+[1]: https://github.com/micheleb/subslider.js
+
 How to use it
 -------------
 

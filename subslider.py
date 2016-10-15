@@ -3,7 +3,7 @@
 #
 # SubSlider - a simple script to apply offsets to subtitles
 #
-# Copyright (C) 2014 - Michele Bonazza <http://somethingididnotknow.wordpress.com>
+# Copyright (C) 2014 - Michele Bonazza <http://michelebonazza.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -37,44 +37,58 @@ class MyParser(argparse.ArgumentParser):
 class SubSlider:
     """A simple script to apply offsets to subtitles.
 
-    Subtitles can be moved forward or back in time depending on the parameters passed."""
+    Subtitles can be moved forward or back in time depending on the parameters
+    passed."""
 
     LINES_TO_SHOW = 10
-    SUB_TIME_FORMAT = "(\d{2}:\d{2}:\d{2},\d{3}) \-\-> (\d{2}:\d{2}:\d{2},\d{3})"
-    DEFAULT_START_AT = "same as input; original .srt file will be copied to ORIGINAL_SRT_NAME_orig.srt"
+    SUB_TIME_FORMAT = "(\d{2}:\d{2}:\d{2},\d{3}) \-\-> "\
+        "(\d{2}:\d{2}:\d{2},\d{3})"
+    DEFAULT_START_AT = "same as input; original .srt file will be copied to "\
+        "ORIGINAL_SRT_NAME_orig.srt"
     DATE_ZERO = datetime.strptime('2000/1/1', '%Y/%m/%d')
 
     def __init__(self):
-        parser = MyParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        parser = MyParser(
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        )
 
         group = parser.add_mutually_exclusive_group(required=True)
-        group.add_argument("-ds", "--delay_subs", help="""make subtitles appear later.
+        group.add_argument("-ds", "--delay_subs",
+                           help="""make subtitles appear later.
                         OFFSET format is
 
-                        [mm:]SS[,sss].
+                           [mm:]SS[,sss].
 
-                        Examples: "1:23,456" (subs delayed of 1 minute, 23 seconds,
-                        456 milliseconds); "100" (subs delayed of 100 seconds, or 1
-                        minute, 40 seconds); "12,43" (subs delayed of 12 seconds, 430
-                        milliseconds)""", metavar='OFFSET')
+                        Examples: "1:23,456" (subs delayed of 1 minute, 23
+                        seconds, 456 milliseconds); "100" (subs delayed of 100
+                        seconds, or 1 minute, 40 seconds); "12,43" (subs
+                        delayed of 12 seconds, 430 milliseconds)""",
+                           metavar='OFFSET')
 
-        group.add_argument("-dv", "--delay_video", help="""make subtitles appear sooner.
+        group.add_argument("-dv", "--delay_video",
+                           help="""make subtitles appear sooner.
                         OFFSET format is
 
-                        [mm:]SS[,sss].
+                           [mm:]SS[,sss].
 
                         Examples: "1:23,456" (subs displayed 1 minute,
                         23 seconds, 456 milliseconds sooner); "100" (subs
-                        displayed 100 seconds, or 1 minute, 40 seconds sooner); "12,43"
-                        (subs are displayed 12 seconds, 430 milliseconds sooner)""", metavar='OFFSET')
-        group.add_argument("-s", "--start_at", help="make the first subtitle appear at a specific time. "
-                                                    "The script will show a list of lines taken from the "
-                                                    ".srt file to choose what's the first line to be "
-                                                    "displayed at TIME",
+                        displayed 100 seconds, or 1 minute, 40 seconds sooner);
+                        "12,43" (subs are displayed 12 seconds, 430
+                        milliseconds sooner)""",
+                           metavar='OFFSET')
+        group.add_argument("-s", "--start_at",
+                           help="""make the first subtitle appear at a specific
+                           time. The script will show a list of lines taken
+                           from the .srt file to choose what's the first line
+                           to be displayed at TIME""",
                            metavar="TIME")
 
-        parser.add_argument("-o", "--output", help="the output .srt subtitles file", default=self.DEFAULT_START_AT)
-        parser.add_argument("input_file", type=str, help="the .srt subtitles file")
+        parser.add_argument("-o", "--output",
+                            help="the output .srt subtitles file",
+                            default=self.DEFAULT_START_AT)
+        parser.add_argument("input_file", type=str,
+                            help="the .srt subtitles file")
 
         args = parser.parse_args()
 
@@ -84,7 +98,8 @@ class SubSlider:
             print('')
             parser.error('Bad arguments.')
 
-        (self.input_subs, self.output_subs, self.output_temp, minutes, seconds, millis) = parsed
+        (self.input_subs, self.output_subs, self.output_temp,
+         minutes, seconds, millis) = parsed
 
         if self.input_subs == self.output_subs:
             # if input is my_movie.srt copy to my_movie_orig.srt
@@ -93,7 +108,8 @@ class SubSlider:
 
         self.first_valid = 0
 
-        # if start was specified, we need to know what's the first line that the offset needs to be applied to
+        # if start was specified, we need to know what's the first line that
+        # the offset needs to be applied to
         subtract_offset = False
         if args.start_at:
             first_starts_at = self.get_offset_from_start_at(args.start_at)
@@ -108,21 +124,18 @@ class SubSlider:
         else:
             offset = self.get_date(minutes, seconds, millis) - self.DATE_ZERO
 
-        if subtract_offset:
-            offset_func = lambda start, end: (start - offset, end - offset)
+        if subtract_offset or args.delay_video:
+            def offset_func(start, end): (start - offset, end - offset)
         else:
-            offset_func = lambda start, end: (start + offset, end + offset)
-
-        if args.delay_video:
-            # the offset must be subtracted from what's in the .srt
-            offset_func = lambda start, end: (start - offset, end - offset)
+            def offset_func(start, end): (start + offset, end + offset)
 
         self.parse_subs(offset_func)
         self.fix_file()
 
         # clean up the temp file
         os.remove(self.output_temp)
-        print('Success! Offset subs have been written to %s' % os.path.abspath(self.output_subs))
+        print('Success! Offset subs have been written to %s' %
+              os.path.abspath(self.output_subs))
 
         if self.input_subs == self.output_subs:
             print('The original subs have been copied to %s' % original)
@@ -131,8 +144,9 @@ class SubSlider:
         """
         Checks that command-line arguments are valid.
 
-        The syntax for parameters is checked by argparse; this method checks that the values provided are valid (e.g.,
-        file paths point to actual files, offsets have been specified following our format, etc.).
+        The syntax for parameters is checked by argparse; this method checks
+        that the values provided are valid (e.g., file paths point to actual
+        files, offsets have been specified following our format, etc.).
         """
         error = None
         input_file = args.input_file
@@ -152,13 +166,18 @@ class SubSlider:
         offset_ok = re.match('(\d{1,2}:)?\d+(,\d{1,3})?$', input_offset)
 
         if not offset_ok:
-            print('%s is not a valid offset, format is [MM:]SS[,sss], see help dialog for some examples' % input_offset)
+            print('%s is not a valid offset, format is [MM:]SS[,sss], see help'
+                  'dialog for some examples' % input_offset)
             error = True
         else:
             offset = re.search('((\d{1,2}):)?(\d+)(,(\d{1,3}))?', input_offset)
-            nsafe = lambda x: offset.group(x) if offset.group(x) else "0"
-            # the ljust call is because we want e.g. '2.5' to be interpreted as 2 seconds, 500 millis
-            minutes, seconds, millis = (nsafe(2), nsafe(3), nsafe(5).ljust(3, '0'))
+
+            def nsafe(x): offset.group(x) if offset.group(x) else "0"
+
+            # the ljust call is because we want e.g. '2.5' to be interpreted as
+            # 2 seconds, 500 millis
+            minutes, seconds, millis = (nsafe(2), nsafe(3),
+                                        nsafe(5).ljust(3, '0'))
             if re.match('^\d+(,(\d{1,3}))?$', input_offset):
                 # format is seconds(,millis), convert to minutes
                 secs = int(seconds)
@@ -168,13 +187,17 @@ class SubSlider:
         if error:
             return None
 
-        return_me = collections.namedtuple('Params', ['input', 'output', 'output_tmp', 'mins', 'secs', 'millis'])
-        return return_me(input_file, output_subs, output_temp, minutes, seconds, millis)
+        return_me = collections.namedtuple('Params',
+                                           ['input', 'output', 'output_tmp',
+                                            'mins', 'secs', 'millis'])
+        return return_me(input_file, output_subs, output_temp,
+                         minutes, seconds, millis)
 
     def get_offset_from_start_at(self, start_at):
         """
-        Shows a prompt to the user for her to choose the reference line that should start at the specified time, and
-        returns the time at which the chosen line was originally shown.
+        Shows a prompt to the user for her to choose the reference line that
+        should start at the specified time, and returns the time at which the
+        chosen line was originally shown.
         """
         lines, times = self.get_first_lines(self.LINES_TO_SHOW)
         # python3 has no "raw_input()"
@@ -186,8 +209,9 @@ class SubSlider:
         for idx, val in enumerate(lines):
             choices.append('%d: {%s}\n' % (idx + 1, val[:-1]))
 
-        prompt = "These are the first %d lines:\n\n" % len(choices) + '\n'.join(choices) + \
-                 "\n\nWhich one should start at %s?\nYour choice 1-%d [1]: " % (start_at, len(choices))
+        prompt = "These are the first %d lines:\n\n" % len(choices) + '\n'\
+            .join(choices) + "\n\nWhich one should start at %s?" + \
+            "\nYour choice 1-%d [1]: " % (start_at, len(choices))
 
         choice = _input(prompt)
         if not choice:
@@ -197,13 +221,15 @@ class SubSlider:
             try:
                 choice = int(choice)
                 if choice < 1 or choice > len(choices):
-                    print("Expected a number between 1 and %d, but %d was entered. Exiting" % (len(choices), choice))
+                    print('Expected a number between 1 and %d, but %d was '
+                          'entered. Exiting' % (len(choices), choice))
                     sys.exit(1)
                 else:
                     # list is 0-based, choices are 1-based
                     choice -= 1
             except ValueError:
-                print("Expected a number between 1 and %d, but '%s' was entered. Exiting" % (len(choices), choice))
+                print('Expected a number between 1 and %d, but "%s" was '
+                      'entered. Exiting' % (len(choices), choice))
                 sys.exit(1)
 
         # parse the string to get the start value
@@ -214,7 +240,8 @@ class SubSlider:
 
     def get_first_lines(self, line_count):
         """
-        Parses the input subs file and returns the first 10 entries, together with the time at which they're shown.
+        Parses the input subs file and returns the first 10 entries, together
+        with the time at which they're shown.
         """
         found = 0
         lines = []
@@ -238,11 +265,12 @@ class SubSlider:
 
     def parse_subs(self, offset_func):
         """
-        Parses the original subs file and applies the offset using the argument function, writing the output to a temp
-        file.
+        Parses the original subs file and applies the offset using the argument
+        function, writing the output to a temp file.
 
-        The method sets self.first_valid to the first block in the temp file that has a timestamp greater than zero;
-        this is done in case some lines in the output subs ended up being displayed at negative time.
+        The method sets self.first_valid to the first block in the temp file
+        that has a timestamp greater than zero; this is done in case some lines
+        in the output subs ended up being displayed at negative time.
         """
         with open(self.input_subs, 'r') as _input:
             with open(self.output_temp, 'w') as output:
@@ -251,27 +279,33 @@ class SubSlider:
                     parsed = re.search(self.SUB_TIME_FORMAT, line)
                     if parsed:
                         block += 1
-                        start, end = (self.parse_time(parsed.group(1)), self.parse_time(parsed.group(2)))
+                        start, end = (self.parse_time(parsed.group(1)),
+                                      self.parse_time(parsed.group(2)))
                         (start, end) = offset_func(start, end)
-                        offset_start, offset_end = (self.format_time(start), self.format_time(end))
+                        offset_start, offset_end = (self.format_time(start),
+                                                    self.format_time(end))
                         if not self.first_valid:
                             if end >= self.DATE_ZERO:
-                                # this line will start at 0, and is going to be displayed until end
+                                # this line will start at 0, and is going to be
+                                # displayed until end
                                 self.first_valid = block
                                 if start < self.DATE_ZERO:
                                     offset_start = '00:00:00,000'
-                        output.write('%s --> %s\n' % (offset_start, offset_end))
+                        output.write('%s --> %s\n' % (offset_start,
+                                                      offset_end))
                     else:
                         output.write(line)
 
     def fix_file(self):
         """
-        Parses the temp file created by parse_subs and renumbers blocks in case lines were dropped because the offset
-        pushed them to negative timestamps.
+        Parses the temp file created by parse_subs and renumbers blocks in case
+        lines were dropped because the offset pushed them to negative
+        timestamps.
         """
         with open(self.output_temp, 'r') as _input:
             with open(self.output_subs, 'w') as output:
-                # we can drop all lines found before the first valid block (set by parse_subs())
+                # we can drop all lines found before the first valid block
+                # (set by parse_subs())
                 start_output = False
                 for line in _input:
                     if re.match('\d+$', line.strip()):
@@ -280,10 +314,12 @@ class SubSlider:
                             # ok, start parsing
                             if not start_output:
                                 start_output = True
-                            # and renumber blocks so that they start at 1, no matter what
-                            output.write('%d\r\n' % (block_num - self.first_valid))
-                    elif start_output:
-                        output.write(line)
+                            # and renumber blocks so that they start at 1, no
+                            # matter what
+                            output.write('%d\r\n' %
+                                         (block_num - self.first_valid))
+                        elif start_output:
+                            output.write(line)
 
     @staticmethod
     def format_time(value):
@@ -296,15 +332,18 @@ class SubSlider:
     @staticmethod
     def get_date(minutes, seconds, millis):
         """
-        Returns a date that can be used for comparisons with timestamps in the .srt file.
+        Returns a date that can be used for comparisons with timestamps in the
+        .srt file.
         """
-        nsafe = lambda s: int(s) if s else 0
-        return datetime(2000, 1, 1, 0, nsafe(minutes), nsafe(seconds), nsafe(millis) * 1000)
+        def nsafe(s): int(s) if s else 0
+        return datetime(2000, 1, 1, 0, nsafe(minutes), nsafe(seconds),
+                        nsafe(millis) * 1000)
 
     @staticmethod
     def parse_time(time):
         """
-        Parses a date using the format '%H:%M:%S,%f' and sets the year to 2000 to avoid trouble.
+        Parses a date using the format '%H:%M:%S,%f' and sets the year to 2000
+        to avoid trouble.
         """
         parsed = datetime.strptime(time, '%H:%M:%S,%f')
         return parsed.replace(year=2000)
