@@ -48,11 +48,11 @@ class SubSlider:
     DATE_ZERO = datetime.strptime('2000/1/1', '%Y/%m/%d')
 
     def __init__(self):
-        parser = MyParser(
+        self.parser = MyParser(
             formatter_class=argparse.ArgumentDefaultsHelpFormatter
         )
 
-        group = parser.add_mutually_exclusive_group(required=True)
+        group = self.parser.add_mutually_exclusive_group(required=True)
         group.add_argument("-ds", "--delay_subs",
                            help="""make subtitles appear later.
                         OFFSET format is
@@ -84,19 +84,20 @@ class SubSlider:
                            to be displayed at TIME""",
                            metavar="TIME")
 
-        parser.add_argument("-o", "--output",
-                            help="the output .srt subtitles file",
-                            default=self.DEFAULT_START_AT)
-        parser.add_argument("input_file", type=str,
-                            help="the .srt subtitles file")
+        self.parser.add_argument("-o", "--output",
+                                 help="the output .srt subtitles file",
+                                 default=self.DEFAULT_START_AT)
+        self.parser.add_argument("input_file", type=str,
+                                 help="the .srt subtitles file")
 
-        args = parser.parse_args()
+    def main(self):
+        args = self.parser.parse_args()
 
         parsed = self.check_args(args)
 
         if not parsed:
             print('')
-            parser.error('Bad arguments.')
+            self.parser.error('Bad arguments.')
 
         (self.input_subs, self.output_subs, self.output_temp,
          minutes, seconds, millis) = parsed
@@ -352,4 +353,4 @@ class SubSlider:
         return parsed.replace(year=2000)
 
 if __name__ == '__main__':
-    SubSlider()
+    SubSlider().main()
