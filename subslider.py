@@ -183,7 +183,7 @@ class SubSlider:
             if re.match('^\d+(,(\d{1,3}))?$', input_offset):
                 # format is seconds(,millis), convert to minutes
                 secs = int(seconds)
-                minutes = str(secs / 60)
+                minutes = str(secs // 60)
                 seconds = str(secs % 60)
 
         if error:
