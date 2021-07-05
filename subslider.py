@@ -24,6 +24,7 @@ import shutil
 import os
 import re
 import sys
+import chardet
 
 
 class MyParser(argparse.ArgumentParser):
@@ -249,7 +250,7 @@ class SubSlider:
         lines = []
         times = []
         buf = []
-        with open(self.input_subs, 'rt') as _input:
+        with SubSlider().file_open(self.input_subs, 'rt') as _input:
             for line in _input:
                 parsed = re.search(self.SUB_TIME_FORMAT, line)
                 if parsed:
@@ -264,7 +265,7 @@ class SubSlider:
                 if found > line_count:
                     return lines, times
         return lines, times
-
+    
     def parse_subs(self, offset_func):
         """
         Parses the original subs file and applies the offset using the argument
@@ -274,8 +275,13 @@ class SubSlider:
         that has a timestamp greater than zero; this is done in case some lines
         in the output subs ended up being displayed at negative time.
         """
+<<<<<<< HEAD
         with open(self.input_subs, 'r') as _input:
             with open(self.output_temp, 'w') as output:
+=======
+        with SubSlider().file_open(self.input_subs, 'r') as _input:
+            with SubSlider().file_open(self.output_temp, 'w') as output:
+>>>>>>> 0261d9c... Fixing file encoding exceptions
                 block = 0
                 for line in _input:
                     parsed = re.search(self.SUB_TIME_FORMAT, line)
@@ -304,8 +310,13 @@ class SubSlider:
         lines were dropped because the offset pushed them to negative
         timestamps.
         """
+<<<<<<< HEAD
         with open(self.output_temp, 'r') as _input:
             with open(self.output_subs, 'w') as output:
+=======
+        with SubSlider().file_open(self.output_temp, 'r') as _input:
+            with SubSlider().file_open(self.output_subs, 'w') as output:
+>>>>>>> 0261d9c... Fixing file encoding exceptions
                 # we can drop all lines found before the first valid block
                 # (set by parse_subs())
                 start_output = False
@@ -324,7 +335,7 @@ class SubSlider:
                             )
                     elif start_output:
                         output.write(line)
-
+    
     @staticmethod
     def format_time(value):
         """
@@ -351,6 +362,30 @@ class SubSlider:
         """
         parsed = datetime.strptime(time, '%H:%M:%S,%f')
         return parsed.replace(year=2000)
+    
+    @staticmethod
+    def get_python_version():
+        """
+        Returns the major version of the python executing the code
+        """
+        return sys.version_info[0]
+
+    @staticmethod
+    def file_open(file_path, file_mode):
+        """
+        Find a file's encoding, open it in a specific mode, and return that object
+        """
+        python_major_version = SubSlider().get_python_version()
+        file_encoding = None
+        if python_major_version == 3:
+            file_encoding = "utf-8"  # Default encoding in Python 3
+
+        if os.path.isfile(file_path):  # If file already exists
+            raw_file_data = open(file_path, 'rb').read()
+            file_encoding = chardet.detect(raw_file_data)['encoding']  # Check encoding of existing file
+
+        return open(file = file_path, mode = file_mode, encoding = file_encoding)
+
 
 if __name__ == '__main__':
     SubSlider().main()
