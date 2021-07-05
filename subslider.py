@@ -275,13 +275,8 @@ class SubSlider:
         that has a timestamp greater than zero; this is done in case some lines
         in the output subs ended up being displayed at negative time.
         """
-<<<<<<< HEAD
-        with open(self.input_subs, 'r') as _input:
-            with open(self.output_temp, 'w') as output:
-=======
         with SubSlider().file_open(self.input_subs, 'r') as _input:
             with SubSlider().file_open(self.output_temp, 'w') as output:
->>>>>>> 0261d9c... Fixing file encoding exceptions
                 block = 0
                 for line in _input:
                     parsed = re.search(self.SUB_TIME_FORMAT, line)
@@ -310,13 +305,8 @@ class SubSlider:
         lines were dropped because the offset pushed them to negative
         timestamps.
         """
-<<<<<<< HEAD
-        with open(self.output_temp, 'r') as _input:
-            with open(self.output_subs, 'w') as output:
-=======
         with SubSlider().file_open(self.output_temp, 'r') as _input:
             with SubSlider().file_open(self.output_subs, 'w') as output:
->>>>>>> 0261d9c... Fixing file encoding exceptions
                 # we can drop all lines found before the first valid block
                 # (set by parse_subs())
                 start_output = False
